@@ -3,18 +3,20 @@ import createElement from "../../assets/lib/create-element.js";
 export default class StepSlider {
   #steps = 0;
   #slider = "";
+  #value = null;
 
   constructor({ steps, value = 0 }) {
     this.#steps = steps;
-    this.#slider = this.#render(value);
+    this.#value = value;
+    this.#slider = this.#render();
   }
 
-  #template(value) {
+  #template() {
     return `
     <div class="slider">
       <!--Ползунок слайдера с активным значением-->
       <div class="slider__thumb" style="left: 0%;">
-        <span class="slider__value">${value}</span>
+        <span class="slider__value">${this.#value}</span>
       </div>
 
       <!--Заполненная часть слайдера-->
@@ -29,7 +31,7 @@ export default class StepSlider {
   }
 
   #render(value) {
-    const slider = createElement(this.#template(value));
+    const slider = createElement(this.#template());
     const stepsContainer = slider.querySelector(".slider__steps");
     const span = "<span></span>";
 
