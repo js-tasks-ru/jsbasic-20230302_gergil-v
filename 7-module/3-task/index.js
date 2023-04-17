@@ -1,78 +1,81 @@
 import createElement from "../../assets/lib/create-element.js";
 
 export default class StepSlider {
-  #steps = 0;
-  #slider = "";
-  #value = null;
+  #elem = null;
+  #steps = null;
+  #value = 0;
+  #currentValue = 0;
 
   constructor({ steps, value = 0 }) {
     this.#steps = steps;
     this.#value = value;
-    this.#slider = this.#render();
+    this.#render();
   }
 
   #template() {
     return `
-    <div class="slider">
-      <!--Ползунок слайдера с активным значением-->
-      <div class="slider__thumb" style="left: 0%;">
-        <span class="slider__value">${this.#value}</span>
+      <!--Корневой элемент слайдера-->
+      <div class="slider">
+        <!--Ползунок слайдера с активным значением-->
+        <div class="slider__thumb">
+          <span class="slider__value">0</span>
+        </div>
+        <!--Полоска слайдера-->
+        <div class="slider__progress"></div>
+        <!-- Шаги слайдера (вертикальные чёрточки) -->
+        <div class="slider__steps">
+        </div>
       </div>
-
-      <!--Заполненная часть слайдера-->
-      <div class="slider__progress" style="width: 0%;"></div>
-
-      <!--Шаги слайдера-->
-      <div class="slider__steps">
-        <span  class="slider__step-active"></span>
-      </div>
-    </div>
     `;
   }
 
-  #render(value) {
-    const slider = createElement(this.#template());
-    const stepsContainer = slider.querySelector(".slider__steps");
-    const span = "<span></span>";
-
-    for (let i = 1; i < this.#steps; i++) {
-      stepsContainer.innerHTML += span;
+  #render() {
+    this.#elem = createElement(this.#template());
+    const sliderSteps = this.#elem.querySelector(".slider__steps");
+    for (let i = 0; i < this.#steps; i++) {
+      const span = document.createElement("span");
+      sliderSteps.append(span);
+      if (i === 0) span.classList.add("slider__step-active");
     }
 
-    slider.addEventListener("click", (event) => {
-      this.sliderClickEvent(event);
-    });
-
-    return slider;
+    this.#slideEvent();
   }
 
-  sliderClickEvent = (event) => {
-    const slider = this.#slider;
-    const sliderValueContainer = slider.querySelector(".slider__value");
-    const thumb = slider.querySelector(".slider__thumb");
-    const progress = slider.querySelector(".slider__progress");
-
-    let left = event.clientX - slider.getBoundingClientRect().left;
-    let leftRelative = left / slider.offsetWidth;
-    let segments = this.#steps - 1;
-    let approximateValue = leftRelative * segments;
-    let value = Math.round(approximateValue);
-    let valuePercents = (value / segments) * 100;
-
-    sliderValueContainer.innerHTML = value;
-
-    thumb.style.left = `${valuePercents}%`;
-    progress.style.width = `${valuePercents}%`;
-
-    const sliderChangeEvent = new CustomEvent("slider-change", {
+  #dispatchCustomEvent = (value) => {
+    const event = new CustomEvent("slider-change", {
       detail: value,
       bubbles: true,
     });
+    this.elem.dispatchEvent(event);
+  };
 
-    return slider.dispatchEvent(sliderChangeEvent);
+  #slideEvent = () => {
+    const stepsNodes = this.#elem.querySelectorAll(".slider__steps>span");
+
+    let thumb = this.#elem.querySelector(".slider__thumb");
+    let progress = this.#elem.querySelector(".slider__progress");
+    let sliderValue = this.#elem.querySelector(".slider__value");
+
+    this.#elem.addEventListener("click", ({ clientX }) => {
+      let { width, left } = this.#elem.getBoundingClientRect();
+      let offset = clientX - left;
+      let leftRelative = offset / width;
+      let segments = this.#steps - 1;
+      let approximateValue = Math.round(leftRelative * segments);
+
+      stepsNodes.forEach((step) => {
+        step.classList.remove("slider__step-active");
+      });
+      stepsNodes[approximateValue].classList.add("slider__step-active");
+      let valuePercents = (approximateValue / segments) * 100;
+      thumb.style.left = `${valuePercents}%`;
+      progress.style.width = `${valuePercents}%`;
+      sliderValue.textContent = approximateValue;
+      this.#dispatchCustomEvent(approximateValue);
+    });
   };
 
   get elem() {
-    return this.#slider;
+    return this.#elem;
   }
 }
