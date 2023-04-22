@@ -51,57 +51,12 @@ export default class StepSlider {
 
   #slideEvent = () => {
     const stepsNodes = this.#elem.querySelectorAll(".slider__steps > span");
+    const thumb = this.#elem.querySelector(".slider__thumb");
+    const progress = this.#elem.querySelector(".slider__progress");
+    const sliderValue = this.#elem.querySelector(".slider__value");
 
-    let thumb = this.#elem.querySelector(".slider__thumb");
-    let progress = this.#elem.querySelector(".slider__progress");
-    let sliderValue = this.#elem.querySelector(".slider__value");
+    thumb.addEventListener("pointerdown", this.#onDown);
 
-    thumb.addEventListener("pointerdown", (e) => {
-      let { width, left } = this.elem.getBoundingClientRect();
-      e.preventDefault();
-      this.#elem.classList.add("slider_dragging");
-
-      const onMove = ({ clientX }) => {
-        console.log(width, left);
-        let offset = clientX - left;
-        let leftRelative = offset / width;
-
-        if (leftRelative < 0) {
-          leftRelative = 0;
-        }
-
-        if (leftRelative > 1) {
-          leftRelative = 1;
-        }
-
-        let leftPercents = leftRelative * 100;
-
-        thumb.style.left = `${leftPercents}%`;
-        progress.style.width = `${leftPercents}%`;
-        let segments = this.#steps - 1;
-        let approximateValue = leftRelative * segments;
-        let value = Math.round(approximateValue);
-        sliderValue.textContent = value;
-        stepsNodes.forEach((step) => {
-          step.classList.remove("slider__step-active");
-        });
-        stepsNodes[value].classList.add("slider__step-active");
-      };
-      document.addEventListener("pointermove", onMove);
-      document.addEventListener(
-        "pointerup",
-        () => {
-          let valuePercents =
-            (100 / (this.#steps - 1)) * sliderValue.textContent;
-          thumb.style.left = `${valuePercents}%`;
-          progress.style.width = `${valuePercents}%`;
-          this.#dispatchCustomEvent(+sliderValue.textContent);
-          document.removeEventListener("pointermove", onMove);
-          this.#elem.classList.remove("slider_dragging");
-        },
-        { once: true }
-      );
-    });
     this.#elem.addEventListener("click", ({ clientX }) => {
       let { width, left } = this.elem.getBoundingClientRect();
       let offset = clientX - left;
@@ -120,6 +75,59 @@ export default class StepSlider {
       sliderValue.textContent = approximateValue;
       this.#dispatchCustomEvent(approximateValue);
     });
+  };
+
+  #onUp = () => {
+    const sliderValue = this.#elem.querySelector(".slider__value");
+    const thumb = this.#elem.querySelector(".slider__thumb");
+    const progress = this.#elem.querySelector(".slider__progress");
+    let valuePercents = (100 / (this.#steps - 1)) * sliderValue.textContent;
+
+    thumb.style.left = `${valuePercents}%`;
+    progress.style.width = `${valuePercents}%`;
+    this.#dispatchCustomEvent(+sliderValue.textContent);
+    document.removeEventListener("pointermove", this.#onMove);
+    this.#elem.classList.remove("slider_dragging");
+  };
+
+  #onDown = (e) => {
+    let { width, left } = this.elem.getBoundingClientRect();
+    e.preventDefault();
+    this.#elem.classList.add("slider_dragging");
+
+    document.addEventListener("pointermove", this.#onMove);
+    document.addEventListener("pointerup", this.#onUp, { once: true });
+  };
+
+  #onMove = ({ clientX }) => {
+    let { width, left } = this.#elem.getBoundingClientRect();
+    const thumb = this.#elem.querySelector(".slider__thumb");
+    const progress = this.#elem.querySelector(".slider__progress");
+    const sliderValue = this.#elem.querySelector(".slider__value");
+    const stepsNodes = this.#elem.querySelectorAll(".slider__steps > span");
+    let offset = clientX - left;
+    let leftRelative = offset / width;
+
+    if (leftRelative < 0) {
+      leftRelative = 0;
+    }
+
+    if (leftRelative > 1) {
+      leftRelative = 1;
+    }
+
+    let leftPercents = leftRelative * 100;
+
+    thumb.style.left = `${leftPercents}%`;
+    progress.style.width = `${leftPercents}%`;
+    let segments = this.#steps - 1;
+    let approximateValue = leftRelative * segments;
+    let value = Math.round(approximateValue);
+    sliderValue.textContent = value;
+    stepsNodes.forEach((step) => {
+      step.classList.remove("slider__step-active");
+    });
+    stepsNodes[value].classList.add("slider__step-active");
   };
 
   get elem() {
