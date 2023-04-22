@@ -102,7 +102,7 @@ export default class RibbonMenu {
       bubbles: true,
     });
 
-    return this.#elem.dispatchEvent(menuItemEvent);
+    this.#elem.dispatchEvent(menuItemEvent);
   };
 
   get elem() {
